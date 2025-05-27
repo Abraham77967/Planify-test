@@ -3082,5 +3082,39 @@ button::after {
     font-size: 0.9em;
 }
 
+/* Spotify troubleshooting section */
+.spotify-troubleshoot {
+    margin-top: 15px;
+    padding: 10px;
+    background-color: #f8f8f8;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    font-size: 0.9em;
+}
+
+.spotify-note {
+    margin-bottom: 8px;
+    color: #555;
+}
+
+.spotify-troubleshoot ol {
+    padding-left: 20px;
+    margin: 0;
+}
+
+.spotify-troubleshoot li {
+    margin-bottom: 5px;
+}
+
+.spotify-troubleshoot code {
+    background-color: #f0f0f0;
+    padding: 2px 4px;
+    border-radius: 3px;
+    font-family: monospace;
+    color: #d01b4b;
+    font-size: 0.95em;
+    word-break: break-all;
+}
+
 /* ... existing code ... */
   

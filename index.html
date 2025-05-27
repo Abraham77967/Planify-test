@@ -45,6 +45,16 @@
                 <div id="spotify-login-container">
                     <p>Connect to Spotify to play your music while working on your goals.</p>
                     <button id="spotify-connect-button" class="spotify-button">Connect Spotify</button>
+                    <div class="spotify-troubleshoot">
+                        <p class="spotify-note">Having trouble? Check your <a href="https://developer.spotify.com/dashboard" target="_blank">Spotify Dashboard</a> settings:</p>
+                        <ol>
+                            <li>Make sure Redirect URI is exactly: <code id="current-uri"></code></li>
+                            <li>Click "Edit Settings" for your app</li>
+                            <li>Go to "Settings" tab</li>
+                            <li>Scroll down and find "Implicit Grant" toggle</li>
+                            <li>Enable it and save changes</li>
+                        </ol>
+                    </div>
                 </div>
                 <div id="spotify-player-container" style="display: none;">
                     <div id="spotify-user-info"></div>

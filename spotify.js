@@ -30,6 +30,33 @@ let pauseButton;
 let prevButton;
 let nextButton;
 
+// PKCE Auth helper functions
+function generateRandomString(length) {
+    let text = '';
+    const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    for (let i = 0; i < length; i++) {
+        text += possible.charAt(Math.floor(Math.random() * possible.length));
+    }
+    return text;
+}
+
+// Base64 URL encode a string
+function base64UrlEncode(str) {
+    return btoa(str)
+        .replace(/\+/g, '-')
+        .replace(/\//g, '_')
+        .replace(/=+$/, '');
+}
+
+// Generate SHA-256 hash of a string
+async function generateCodeChallenge(codeVerifier) {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(codeVerifier);
+    const digest = await window.crypto.subtle.digest('SHA-256', data);
+    
+    return base64UrlEncode(String.fromCharCode(...new Uint8Array(digest)));
+}
+
 // Initialize Spotify integration when DOM is loaded
 document.addEventListener("DOMContentLoaded", initializeSpotify);
 
@@ -52,6 +79,12 @@ function initializeSpotify() {
     pauseButton.addEventListener("click", pauseSpotify);
     prevButton.addEventListener("click", previousTrack);
     nextButton.addEventListener("click", nextTrack);
+    
+    // Display current redirect URI for troubleshooting
+    const currentUriElement = document.getElementById("current-uri");
+    if (currentUriElement) {
+        currentUriElement.textContent = SPOTIFY_REDIRECT_URI;
+    }
 
     // Test popup capability
     testPopupCapability();
@@ -145,84 +178,106 @@ function initializePlayer() {
     spotifyPlayer = player;
 }
 
-// Authenticate with Spotify (open popup for Spotify login)
+// Authenticate with Spotify using Implicit Flow
 function authenticateWithSpotify() {
-    // Log the redirect URI for debugging
-    console.log("Using redirect URI:", SPOTIFY_REDIRECT_URI);
-    
-    // Build the Spotify authorization URL
-    const authUrl = new URL(SPOTIFY_AUTH_URL);
-    
-    // Add query parameters
-    authUrl.searchParams.append("client_id", SPOTIFY_CLIENT_ID);
-    authUrl.searchParams.append("response_type", "token");
-    authUrl.searchParams.append("redirect_uri", SPOTIFY_REDIRECT_URI);
-    authUrl.searchParams.append("scope", SPOTIFY_SCOPES.join(" "));
-    authUrl.searchParams.append("show_dialog", "true");
-    
-    // Log the full auth URL for debugging
-    console.log("Auth URL:", authUrl.toString());
-    
-    // Open a popup window for authentication
-    const width = 450;
-    const height = 730;
-    const left = (window.screen.width / 2) - (width / 2);
-    const top = (window.screen.height / 2) - (height / 2);
-    
-    const authWindow = window.open(
-        authUrl.toString(),
-        'Spotify Login',
-        `width=${width},height=${height},left=${left},top=${top}`
-    );
-    
-    // Check if popup was blocked
-    if (authWindow === null || typeof authWindow === 'undefined') {
-        alert("Please allow popups for this website to connect to Spotify");
-        return;
+    try {
+        // Log the redirect URI for debugging
+        console.log("Using redirect URI:", SPOTIFY_REDIRECT_URI);
+        
+        // Build the Spotify authorization URL for Implicit Flow
+        const authUrl = new URL(SPOTIFY_AUTH_URL);
+        
+        // Add query parameters for Implicit Flow
+        authUrl.searchParams.append("client_id", SPOTIFY_CLIENT_ID);
+        authUrl.searchParams.append("response_type", "token");
+        authUrl.searchParams.append("redirect_uri", SPOTIFY_REDIRECT_URI);
+        authUrl.searchParams.append("scope", SPOTIFY_SCOPES.join(" "));
+        authUrl.searchParams.append("show_dialog", "true");
+        
+        // Log the full auth URL for debugging
+        console.log("Auth URL:", authUrl.toString());
+        
+        // Redirect to Spotify authorization
+        window.location.href = authUrl.toString();
+    } catch (error) {
+        console.error("Error initiating Spotify auth:", error);
+        alert("There was a problem connecting to Spotify. Please try again.");
     }
-    
-    // Setup interval to check for authentication
-    const pollTimer = window.setInterval(() => {
-        try {
-            // Check if auth is complete
-            if (authWindow.closed) {
-                window.clearInterval(pollTimer);
-                checkSavedToken();
-            } else if (authWindow.location.href.includes(SPOTIFY_REDIRECT_URI)) {
-                // Auth complete, process the token
-                window.clearInterval(pollTimer);
-                
-                const hash = authWindow.location.hash.substring(1);
-                authWindow.close();
-                
-                const hashParams = new URLSearchParams(hash);
-                if (hashParams.has("access_token")) {
-                    // Store token
-                    accessToken = hashParams.get("access_token");
-                    const expiresIn = hashParams.get("expires_in");
-                    
-                    // Save token to local storage
-                    saveToken(accessToken, expiresIn);
-                    
-                    // Setup the UI with the new token
-                    setupAuthenticatedUI();
-                    
-                    console.log("Successfully authenticated with Spotify");
-                } else if (hashParams.has("error")) {
-                    console.error("Spotify authentication error:", hashParams.get("error"));
-                    alert("Failed to connect to Spotify: " + hashParams.get("error"));
-                }
-            }
-        } catch (e) {
-            // Cross-origin errors will occur until redirected to our site
-            // Just ignore these expected errors
-        }
-    }, 500);
 }
 
-// Check URL for auth callback with token
-function checkAuthCallback() {
-    // Check if we're returning from Spotify auth
+// Check URL for auth callback with token or code
+async function checkAuthCallback() {
+    console.log("Checking auth callback...");
+    console.log("Current URL:", window.location.href);
+    
+    // Check for code (PKCE flow)
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.has("code")) {
+        const code = urlParams.get("code");
+        console.log("Received authorization code:", code);
+        
+        // Get code verifier from storage
+        const codeVerifier = localStorage.getItem('spotify_code_verifier');
+        
+        if (!codeVerifier) {
+            console.error("Code verifier not found in storage");
+            alert("Authentication failed: Code verifier not found. Please try again.");
+            return false;
+        }
+        
+        try {
+            // Alert the user about what's happening
+            alert("Authorization code received! Due to CORS limitations in this demo, we need you to complete one more step. Please visit the Spotify Developer Dashboard and edit your app to use Implicit Grant Flow instead. Then try again with the Connect button.");
+            
+            // Clear code from URL
+            history.replaceState(null, null, window.location.pathname);
+            return false;
+            
+            /* 
+            // In a real application with a backend, you would do:
+            const tokenUrl = "https://accounts.spotify.com/api/token";
+            
+            const tokenData = new URLSearchParams();
+            tokenData.append("client_id", SPOTIFY_CLIENT_ID);
+            tokenData.append("grant_type", "authorization_code");
+            tokenData.append("code", code);
+            tokenData.append("redirect_uri", SPOTIFY_REDIRECT_URI);
+            tokenData.append("code_verifier", codeVerifier);
+            
+            // Send token request via your backend
+            const response = await fetch("/api/spotify-token", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    code,
+                    codeVerifier,
+                    redirectUri: SPOTIFY_REDIRECT_URI
+                })
+            });
+            */
+        } catch (error) {
+            console.error("Error exchanging code for token:", error);
+            alert("Failed to authenticate with Spotify: " + error.message);
+            
+            // Clear code from URL
+            history.replaceState(null, null, window.location.pathname);
+            return false;
+        }
+    }
+    
+    // Check for errors
+    if (urlParams.has("error")) {
+        console.error("Spotify authorization error:", urlParams.get("error"));
+        alert("Failed to connect to Spotify: " + urlParams.get("error"));
+        
+        // Clear error from URL
+        history.replaceState(null, null, window.location.pathname);
+        return false;
+    }
+    
+    // Check for token (implicit flow)
     if (window.location.hash) {
         const hashParams = new URLSearchParams(window.location.hash.substring(1));
         if (hashParams.has("access_token")) {
@@ -240,15 +295,19 @@ function checkAuthCallback() {
             setupAuthenticatedUI();
             
             // Log success for debugging
-            console.log("Successfully authenticated with Spotify");
+            console.log("Successfully authenticated with Spotify via Implicit Flow");
             return true;
         } else if (hashParams.has("error")) {
             // Handle authentication errors
             console.error("Spotify authentication error:", hashParams.get("error"));
             alert("Failed to connect to Spotify: " + hashParams.get("error"));
+            
+            // Clear hash from URL
+            history.replaceState(null, null, window.location.pathname);
             return false;
         }
     }
+    
     return false;
 }
 
@@ -280,6 +339,7 @@ function saveToken(token, expiresIn) {
 function clearToken() {
     localStorage.removeItem("spotify_access_token");
     localStorage.removeItem("spotify_token_expiry");
+    localStorage.removeItem("spotify_code_verifier");
     accessToken = null;
     
     // Reset UI
