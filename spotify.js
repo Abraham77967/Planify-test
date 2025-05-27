@@ -1,6 +1,6 @@
 // Spotify API Configuration
 const spotifyConfig = {
-    clientId: 'abc123def456ghi789', // Your Spotify Developer Dashboard Client ID
+    clientId: '82f6edcd7d0648eba0f0a297c8c2c197', // Your Spotify Developer Dashboard Client ID
     redirectUri: window.location.origin,
     authEndpoint: 'https://accounts.spotify.com/authorize',
     tokenEndpoint: 'https://accounts.spotify.com/api/token',
