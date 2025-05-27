@@ -2,7 +2,7 @@
 
 // Spotify API credentials and configuration
 const SPOTIFY_CLIENT_ID = "82f6edcd7d0648eba0f0a297c8c2c197"; // User's Spotify Client ID
-const SPOTIFY_REDIRECT_URI = "https://abraham77967.github.io/Planify-test/"; // GitHub Pages URL
+const SPOTIFY_REDIRECT_URI = "https://abraham77967.github.io"; // Exact URI from error message
 const SPOTIFY_SCOPES = [
     "user-read-private", 
     "user-read-email", 
@@ -133,6 +133,9 @@ function initializePlayer() {
 
 // Authenticate with Spotify (redirect to Spotify login)
 function authenticateWithSpotify() {
+    // Log the redirect URI for debugging
+    console.log("Using redirect URI:", SPOTIFY_REDIRECT_URI);
+    
     // Build the Spotify authorization URL
     const authUrl = new URL(SPOTIFY_AUTH_URL);
     
@@ -142,6 +145,9 @@ function authenticateWithSpotify() {
     authUrl.searchParams.append("redirect_uri", SPOTIFY_REDIRECT_URI);
     authUrl.searchParams.append("scope", SPOTIFY_SCOPES.join(" "));
     authUrl.searchParams.append("show_dialog", "true");
+    
+    // Log the full auth URL for debugging
+    console.log("Auth URL:", authUrl.toString());
     
     // Redirect to Spotify authorization page
     window.location.href = authUrl.toString();
