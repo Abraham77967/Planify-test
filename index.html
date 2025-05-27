@@ -29,50 +29,36 @@
             </div>
         </div>
         
-        <!-- Top Section: Goals and Spotify -->
-        <div class="top-section">
-            <!-- Main Goals Section -->
-            <div id="main-goals-section" class="main-goals-section">
-                <h3>Main Goals</h3>
-                <div id="goals-container" class="goals-container">
-                    <!-- Goals will be added here dynamically -->
-                </div>
-                <button id="edit-goals-button" class="edit-goals-button">Edit Goals</button>
+        <!-- Main Goals Section -->
+        <div id="main-goals-section" class="main-goals-section">
+            <h3>Main Goals</h3>
+            <div id="goals-container" class="goals-container">
+                <!-- Goals will be added here dynamically -->
             </div>
+            <button id="edit-goals-button" class="edit-goals-button">Edit Goals</button>
+        </div>
 
-            <!-- Spotify Music Card -->
-            <div id="spotify-card" class="spotify-card">
-                <h3>Spotify Music</h3>
-                <div id="spotify-container" class="spotify-container">
-                    <div id="spotify-login-section" class="spotify-section">
-                        <p>Connect your Spotify account to browse and play your playlists.</p>
-                        <button id="spotify-connect-button" class="spotify-button">Connect Spotify</button>
+        <!-- Spotify Music Section -->
+        <div id="spotify-section" class="spotify-section">
+            <h3>Your Music</h3>
+            <div id="spotify-container" class="spotify-container">
+                <div id="spotify-login-container">
+                    <p>Connect to Spotify to play your music while working on your goals.</p>
+                    <button id="spotify-connect-button" class="spotify-button">Connect Spotify</button>
+                </div>
+                <div id="spotify-player-container" style="display: none;">
+                    <div id="spotify-user-info"></div>
+                    <div id="spotify-playlists-container">
+                        <h4>Your Playlists</h4>
+                        <div id="playlists-list"></div>
                     </div>
-                    <div id="spotify-player-section" class="spotify-section" style="display:none;">
-                        <div id="spotify-user-info" class="spotify-user-info">
-                            <span id="spotify-user-name"></span>
-                            <button id="spotify-logout-button" class="secondary-button">Disconnect</button>
-                        </div>
-                        <div class="spotify-content">
-                            <div class="spotify-playlists-section">
-                                <h4>Your Playlists</h4>
-                                <div id="spotify-playlists" class="spotify-playlists">
-                                    <!-- Playlists will be populated here -->
-                                </div>
-                            </div>
-                            <div class="spotify-player-controls">
-                                <div id="now-playing-container" class="now-playing-container">
-                                    <div id="now-playing-info">
-                                        <div id="track-name">No track playing</div>
-                                        <div id="artist-name"></div>
-                                    </div>
-                                    <div id="player-controls">
-                                        <button id="previous-track" class="player-control-button">⏮</button>
-                                        <button id="play-pause" class="player-control-button">▶</button>
-                                        <button id="next-track" class="player-control-button">⏭</button>
-                                    </div>
-                                </div>
-                            </div>
+                    <div id="spotify-player-controls">
+                        <div id="currently-playing"></div>
+                        <div class="player-buttons">
+                            <button id="spotify-prev-button" class="spotify-control-button">⏮</button>
+                            <button id="spotify-play-button" class="spotify-control-button">▶</button>
+                            <button id="spotify-pause-button" class="spotify-control-button">⏸</button>
+                            <button id="spotify-next-button" class="spotify-control-button">⏭</button>
                         </div>
                     </div>
                 </div>
@@ -207,7 +193,6 @@
     <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-database-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-firestore-compat.js"></script>
-    <script src="https://sdk.scdn.co/spotify-player.js"></script>
     <script src="script.js"></script>
     <script src="spotify.js"></script>
 </body>
