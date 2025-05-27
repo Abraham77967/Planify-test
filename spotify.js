@@ -1,7 +1,7 @@
 // Spotify API Configuration
 const spotifyConfig = {
     clientId: '82f6edcd7d0648eba0f0a297c8c2c197', // Your Spotify Developer Dashboard Client ID
-    redirectUri: window.location.origin,
+    redirectUri: 'https://abraham77967.github.io/Planify-test/',
     authEndpoint: 'https://accounts.spotify.com/authorize',
     tokenEndpoint: 'https://accounts.spotify.com/api/token',
     scopes: [
@@ -87,6 +87,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // Function to login with Spotify
     function loginWithSpotify() {
         const authUrl = `${spotifyConfig.authEndpoint}?client_id=${spotifyConfig.clientId}&redirect_uri=${encodeURIComponent(spotifyConfig.redirectUri)}&scope=${encodeURIComponent(spotifyConfig.scopes.join(' '))}&response_type=token&show_dialog=true`;
+        console.log('Spotify Auth URL:', authUrl);
+        console.log('Client ID:', spotifyConfig.clientId);
+        console.log('Redirect URI:', spotifyConfig.redirectUri);
         window.location.href = authUrl;
     }
 
