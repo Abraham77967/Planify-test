@@ -1,16 +1,9 @@
 // Spotify Integration for Calendar App
 
 // Spotify API credentials and configuration
-const SPOTIFY_CLIENT_ID = "82f6edcd7d0648eba0f0a297c8c2c197"; // User's Spotify Client ID
-const SPOTIFY_REDIRECT_URI = "https://abraham77967.github.io"; // Exact URI from error message
-const SPOTIFY_SCOPES = [
-    "user-read-private", 
-    "user-read-email", 
-    "user-read-playback-state", 
-    "user-modify-playback-state", 
-    "playlist-read-private", 
-    "streaming"
-];
+const SPOTIFY_CLIENT_ID = SPOTIFY_CONFIG.CLIENT_ID;
+const SPOTIFY_REDIRECT_URI = SPOTIFY_CONFIG.REDIRECT_URI;
+const SPOTIFY_SCOPES = SPOTIFY_CONFIG.SCOPES;
 
 // Spotify API endpoints
 const SPOTIFY_AUTH_URL = "https://accounts.spotify.com/authorize";
@@ -60,6 +53,9 @@ function initializeSpotify() {
     prevButton.addEventListener("click", previousTrack);
     nextButton.addEventListener("click", nextTrack);
 
+    // Test popup capability
+    testPopupCapability();
+
     // Check if we have a token in the URL (returning from auth)
     checkAuthCallback();
 
@@ -68,6 +64,24 @@ function initializeSpotify() {
 
     // Load the Spotify Web Playback SDK
     loadSpotifySDK();
+}
+
+// Test if popups are allowed
+function testPopupCapability() {
+    const testPopup = window.open('', '_blank', 'width=1,height=1');
+    if (!testPopup || testPopup.closed || typeof testPopup.closed === 'undefined') {
+        console.warn("Popups appear to be blocked. Spotify login may not work correctly.");
+        
+        // Add a warning to the login container
+        const warningElement = document.createElement('p');
+        warningElement.className = 'popup-warning';
+        warningElement.textContent = 'Please enable popups for this site to use Spotify integration.';
+        warningElement.style.color = 'red';
+        warningElement.style.fontSize = '12px';
+        loginContainer.appendChild(warningElement);
+    } else {
+        testPopup.close();
+    }
 }
 
 // Load the Spotify Web Playback SDK
@@ -131,7 +145,7 @@ function initializePlayer() {
     spotifyPlayer = player;
 }
 
-// Authenticate with Spotify (redirect to Spotify login)
+// Authenticate with Spotify (open popup for Spotify login)
 function authenticateWithSpotify() {
     // Log the redirect URI for debugging
     console.log("Using redirect URI:", SPOTIFY_REDIRECT_URI);
@@ -149,8 +163,61 @@ function authenticateWithSpotify() {
     // Log the full auth URL for debugging
     console.log("Auth URL:", authUrl.toString());
     
-    // Redirect to Spotify authorization page
-    window.location.href = authUrl.toString();
+    // Open a popup window for authentication
+    const width = 450;
+    const height = 730;
+    const left = (window.screen.width / 2) - (width / 2);
+    const top = (window.screen.height / 2) - (height / 2);
+    
+    const authWindow = window.open(
+        authUrl.toString(),
+        'Spotify Login',
+        `width=${width},height=${height},left=${left},top=${top}`
+    );
+    
+    // Check if popup was blocked
+    if (authWindow === null || typeof authWindow === 'undefined') {
+        alert("Please allow popups for this website to connect to Spotify");
+        return;
+    }
+    
+    // Setup interval to check for authentication
+    const pollTimer = window.setInterval(() => {
+        try {
+            // Check if auth is complete
+            if (authWindow.closed) {
+                window.clearInterval(pollTimer);
+                checkSavedToken();
+            } else if (authWindow.location.href.includes(SPOTIFY_REDIRECT_URI)) {
+                // Auth complete, process the token
+                window.clearInterval(pollTimer);
+                
+                const hash = authWindow.location.hash.substring(1);
+                authWindow.close();
+                
+                const hashParams = new URLSearchParams(hash);
+                if (hashParams.has("access_token")) {
+                    // Store token
+                    accessToken = hashParams.get("access_token");
+                    const expiresIn = hashParams.get("expires_in");
+                    
+                    // Save token to local storage
+                    saveToken(accessToken, expiresIn);
+                    
+                    // Setup the UI with the new token
+                    setupAuthenticatedUI();
+                    
+                    console.log("Successfully authenticated with Spotify");
+                } else if (hashParams.has("error")) {
+                    console.error("Spotify authentication error:", hashParams.get("error"));
+                    alert("Failed to connect to Spotify: " + hashParams.get("error"));
+                }
+            }
+        } catch (e) {
+            // Cross-origin errors will occur until redirected to our site
+            // Just ignore these expected errors
+        }
+    }, 500);
 }
 
 // Check URL for auth callback with token
@@ -167,12 +234,22 @@ function checkAuthCallback() {
             saveToken(accessToken, expiresIn);
             
             // Clear hash from URL
-            history.replaceState(null, null, ' ');
+            history.replaceState(null, null, window.location.pathname);
             
             // Setup the UI with the new token
             setupAuthenticatedUI();
+            
+            // Log success for debugging
+            console.log("Successfully authenticated with Spotify");
+            return true;
+        } else if (hashParams.has("error")) {
+            // Handle authentication errors
+            console.error("Spotify authentication error:", hashParams.get("error"));
+            alert("Failed to connect to Spotify: " + hashParams.get("error"));
+            return false;
         }
     }
+    return false;
 }
 
 // Check for saved token in local storage
